@@ -58,7 +58,8 @@ if [ -n "$SESSION_ID" ]; then
   if ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SSH_USER}@host.docker.internal" "tmux has-session -t '$SESSION_ID' 2>/dev/null"; then
     echo "DEBUG: Attaching to existing session" >> /tmp/wrapper-debug.log
     # Attach to existing session
-    exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "TERM=screen-256color tmux attach-session -t '$SESSION_ID'"
+    # Set terminal title to user@hostname using escape sequence
+    exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "printf '\033]0;%s@%s\007' \"\$USER\" \"\$(hostname)\"; TERM=screen-256color tmux attach-session -t '$SESSION_ID'"
   else
     echo "DEBUG: Creating new session" >> /tmp/wrapper-debug.log
     # Create new detached session first, then attach to it
@@ -72,11 +73,12 @@ if [ -n "$SESSION_ID" ]; then
       ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SSH_USER}@host.docker.internal" "TERM=screen-256color tmux new-session -d -s '$SESSION_ID' $CMD"
     fi
     
-    # Now attach to the session
-    exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "TERM=screen-256color tmux attach-session -t '$SESSION_ID'"
+    # Now attach to the session and set terminal title
+    exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "printf '\033]0;%s@%s\007' \"\$USER\" \"\$(hostname)\"; TERM=screen-256color tmux attach-session -t '$SESSION_ID'"
   fi
 else
   echo "DEBUG: Using direct SSH mode (no session)" >> /tmp/wrapper-debug.log
   # No session - direct SSH without tmux (normal mode)
-  exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "export TERM=xterm-256color; exec $CMD"
+  # Set terminal title to user@hostname using escape sequence
+  exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "printf '\033]0;%s@%s\007' \"\$USER\" \"\$(hostname)\"; export TERM=xterm-256color; exec $CMD"
 fi
