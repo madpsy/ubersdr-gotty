@@ -46,9 +46,16 @@ COPY --from=go-builder /app/gotty /usr/local/bin/gotty
 
 # Create entrypoint script to handle SSH key permissions and username detection
 RUN echo '#!/bin/bash' > /entrypoint.sh && \
+    echo '# Ensure .ssh directory exists' >> /entrypoint.sh && \
+    echo 'mkdir -p /root/.ssh' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Handle directory mount at /ssh-keys' >> /entrypoint.sh && \
     echo 'if [ -d /ssh-keys ]; then' >> /entrypoint.sh && \
-    echo '  mkdir -p /root/.ssh' >> /entrypoint.sh && \
     echo '  cp -r /ssh-keys/* /root/.ssh/ 2>/dev/null || true' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Fix permissions for all SSH keys' >> /entrypoint.sh && \
+    echo 'if [ -d /root/.ssh ]; then' >> /entrypoint.sh && \
     echo '  chmod 700 /root/.ssh' >> /entrypoint.sh && \
     echo '  chmod 600 /root/.ssh/* 2>/dev/null || true' >> /entrypoint.sh && \
     echo '  chmod 644 /root/.ssh/*.pub 2>/dev/null || true' >> /entrypoint.sh && \

@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/NYTimes/gziphandler"
-	"github.com/elazarl/go-bindata-assetfs"
+	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 
@@ -207,6 +207,15 @@ func (server *Server) setupHandlers(ctx context.Context, cancel context.CancelFu
 	wsMux := http.NewServeMux()
 	wsMux.Handle("/", siteHandler)
 	wsMux.HandleFunc(pathPrefix+"ws", server.generateHandleWS(ctx, cancel, counter))
+
+	// Add REST API endpoint for command execution
+	apiHandler := http.Handler(http.HandlerFunc(server.handleAPIExec))
+	if server.options.EnableBasicAuth {
+		apiHandler = server.wrapBasicAuth(apiHandler, server.options.Credential)
+	}
+	wsMux.Handle(pathPrefix+"api/exec", server.wrapLogger(apiHandler))
+	log.Printf("REST API enabled at: %sapi/exec", pathPrefix)
+
 	siteHandler = http.Handler(wsMux)
 
 	return siteHandler
