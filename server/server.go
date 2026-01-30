@@ -193,6 +193,7 @@ func (server *Server) setupHandlers(ctx context.Context, cancel context.CancelFu
 
 	siteMux.HandleFunc(pathPrefix+"auth_token.js", server.handleAuthToken)
 	siteMux.HandleFunc(pathPrefix+"config.js", server.handleConfig)
+	siteMux.HandleFunc(pathPrefix+"sessions", server.handleSessionsPage)
 
 	siteHandler := http.Handler(siteMux)
 
@@ -215,6 +216,17 @@ func (server *Server) setupHandlers(ctx context.Context, cancel context.CancelFu
 	}
 	wsMux.Handle(pathPrefix+"api/exec", server.wrapLogger(apiHandler))
 	log.Printf("REST API enabled at: %sapi/exec", pathPrefix)
+
+	// Add REST API endpoints for session management
+	sessionListHandler := http.Handler(http.HandlerFunc(server.handleSessionList))
+	sessionDestroyHandler := http.Handler(http.HandlerFunc(server.handleSessionDestroy))
+	if server.options.EnableBasicAuth {
+		sessionListHandler = server.wrapBasicAuth(sessionListHandler, server.options.Credential)
+		sessionDestroyHandler = server.wrapBasicAuth(sessionDestroyHandler, server.options.Credential)
+	}
+	wsMux.Handle(pathPrefix+"api/sessions", server.wrapLogger(sessionListHandler))
+	wsMux.Handle(pathPrefix+"api/sessions/destroy", server.wrapLogger(sessionDestroyHandler))
+	log.Printf("Session API enabled at: %sapi/sessions", pathPrefix)
 
 	siteHandler = http.Handler(wsMux)
 

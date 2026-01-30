@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Manager - GoTTY</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .controls {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .sessions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .session-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .session-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .session-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .session-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-attached {
+            background: #48bb78;
+            color: white;
+        }
+
+        .badge-detached {
+            background: #cbd5e0;
+            color: #4a5568;
+        }
+
+        .session-info {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .session-info svg {
+            width: 16px;
+            height: 16px;
+            opacity: 0.6;
+        }
+
+        .session-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .empty-state {
+            background: white;
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state h2 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖥️ Session Manager</h1>
+            <p class="subtitle">Manage your persistent terminal sessions</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="refreshSessions()">
+                <span id="refresh-text">🔄 Refresh</span>
+            </button>
+            <a href="/" class="btn btn-success">➕ New Session</a>
+            <span style="margin-left: auto; color: #666; font-size: 14px;">
+                <span id="session-count">0</span> active sessions
+            </span>
+        </div>
+
+        <div id="error-container"></div>
+        <div id="sessions-container">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading sessions...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sessions = [];
+
+        async function fetchSessions() {
+            try {
+                const response = await fetch('/api/sessions');
+                if (!response.ok) throw new Error('Failed to fetch sessions');
+                const data = await response.json();
+                sessions = data.sessions || [];
+                renderSessions();
+            } catch (error) {
+                showError('Failed to load sessions: ' + error.message);
+            }
+        }
+
+        function renderSessions() {
+            const container = document.getElementById('sessions-container');
+            const countEl = document.getElementById('session-count');
+            
+            countEl.textContent = sessions.length;
+
+            if (sessions.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        <h2>No Active Sessions</h2>
+                        <p>Create a new session to get started</p>
+                        <a href="/" class="btn btn-primary">Create Session</a>
+                    </div>
+                `;
+                return;
+            }
+
+            const grid = document.createElement('div');
+            grid.className = 'sessions-grid';
+
+            sessions.forEach(session => {
+                const card = createSessionCard(session);
+                grid.appendChild(card);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(grid);
+        }
+
+        function createSessionCard(session) {
+            const card = document.createElement('div');
+            card.className = 'session-card';
+
+            const attachedBadge = session.attached 
+                ? '<span class="session-badge badge-attached">● Attached</span>'
+                : '<span class="session-badge badge-detached">○ Detached</span>';
+
+            card.innerHTML = `
+                <div class="session-name">
+                    ${escapeHtml(session.name)}
+                    ${attachedBadge}
+                </div>
+                <div class="session-info">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Created: ${session.created}
+                </div>
+                <div class="session-info">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    Last active: ${session.last_active}
+                </div>
+                <div class="session-info">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+                    </svg>
+                    Windows: ${session.windows}
+                </div>
+                <div class="session-actions">
+                    <button class="btn btn-primary" onclick="attachSession('${escapeHtml(session.name)}')">
+                        🔗 Attach
+                    </button>
+                    <button class="btn btn-danger" onclick="destroySession('${escapeHtml(session.name)}')">
+                        🗑️ Destroy
+                    </button>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function attachSession(name) {
+            window.location.href = `/?session=${encodeURIComponent(name)}`;
+        }
+
+        async function destroySession(name) {
+            if (!confirm(`Are you sure you want to destroy session "${name}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/sessions/destroy?name=${encodeURIComponent(name)}`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) throw new Error('Failed to destroy session');
+                
+                const data = await response.json();
+                if (data.success) {
+                    await refreshSessions();
+                } else {
+                    showError(data.message || 'Failed to destroy session');
+                }
+            } catch (error) {
+                showError('Error destroying session: ' + error.message);
+            }
+        }
+
+        async function refreshSessions() {
+            const refreshBtn = document.getElementById('refresh-text');
+            refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
+            await fetchSessions();
+            refreshBtn.textContent = '🔄 Refresh';
+        }
+
+        function showError(message) {
+            const container = document.getElementById('error-container');
+            container.innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initial load
+        fetchSessions();
+
+        // Auto-refresh every 5 seconds
+        setInterval(fetchSessions, 5000);
+    </script>
+</body>
+</html>

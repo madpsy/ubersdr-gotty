@@ -3,6 +3,19 @@
 # Run ubersdr-gotty container with SSH access to Docker host
 # Usage: ./run.sh [ssh_key_path]
 # Example: ./run.sh ~/.ssh/my_key
+#
+# Access the terminal at http://localhost:9980/
+# Run specific commands via URL: http://localhost:9980/?arg=btop
+#
+# Session Manager UI: http://localhost:9980/sessions
+#
+# Persistent sessions (requires tmux on host):
+#   http://localhost:9980/?arg=btop&session=monitoring  - Run btop in persistent session
+#   http://localhost:9980/?session=monitoring           - Attach to existing session
+#
+# Session management API:
+#   GET  http://localhost:9980/api/sessions             - List all sessions
+#   POST http://localhost:9980/api/sessions/destroy?name=SESSION - Destroy a session
 
 SSH_KEY_PATH="${1:-$HOME/.ssh}"
 

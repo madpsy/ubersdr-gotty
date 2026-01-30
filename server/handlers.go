@@ -211,6 +211,16 @@ func (server *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("var gotty_term = '" + server.options.Term + "';"))
 }
 
+func (server *Server) handleSessionsPage(w http.ResponseWriter, r *http.Request) {
+	sessionsHTML, err := Asset("static/sessions.html")
+	if err != nil {
+		http.Error(w, "Sessions page not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(sessionsHTML)
+}
+
 // titleVariables merges maps in a specified order.
 // varUnits are name-keyed maps, whose names will be iterated using order.
 func (server *Server) titleVariables(order []string, varUnits map[string]map[string]interface{}) map[string]interface{} {
