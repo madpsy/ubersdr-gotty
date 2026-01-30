@@ -974,6 +974,9 @@
         // Auto-refresh connections every 5 seconds
         setInterval(fetchConnections, 5000);
 
+        // Auto-refresh sessions every 10 seconds
+        setInterval(fetchSessions, 10000);
+
         // Initial load
         fetchSessions();
         fetchConnections();
