@@ -232,7 +232,8 @@
             <button class="btn btn-primary" onclick="refreshSessions()">
                 <span id="refresh-text">🔄 Refresh</span>
             </button>
-            <a href="/" class="btn btn-success">➕ New Session</a>
+            <button class="btn btn-success" onclick="createNewSession()">➕ New Session</button>
+            <a href="/" class="btn" style="background: #718096; color: white;">🖥️ Direct Terminal</a>
             <span style="margin-left: auto; color: #666; font-size: 14px;">
                 <span id="session-count">0</span> active sessions
             </span>
@@ -384,6 +385,19 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function createNewSession() {
+            // Auto-generate unique session ID
+            const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+            
+            // Optionally ask for friendly name
+            const friendlyName = prompt('Enter a friendly name for the session (optional):\n\nSession ID: ' + sessionId, '');
+            
+            // Use friendly name if provided, otherwise use auto-generated ID
+            const finalName = (friendlyName && friendlyName.trim()) ? friendlyName.trim() : sessionId;
+            
+            window.location.href = `/?session=${encodeURIComponent(finalName)}`;
         }
 
         // Initial load
