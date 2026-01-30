@@ -38,7 +38,7 @@ RUN go mod init github.com/yudai/gotty && \
 # Final stage
 FROM alpine:latest
 
-RUN apk add --no-cache ca-certificates bash
+RUN apk add --no-cache ca-certificates bash openssh-client
 
 WORKDIR /app
 
@@ -48,4 +48,4 @@ COPY --from=go-builder /app/gotty /usr/local/bin/gotty
 EXPOSE 8080
 
 ENTRYPOINT ["gotty"]
-CMD ["--help"]
+CMD ["--permit-write", "--reconnect", "ssh", "host.docker.internal"]
