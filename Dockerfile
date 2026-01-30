@@ -66,7 +66,8 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
     echo '# If no custom command provided, use default SSH command with detected user' >> /entrypoint.sh && \
     echo 'if [ "$#" -eq 0 ] || [ "$1" = "--permit-write" ]; then' >> /entrypoint.sh && \
-    echo '  exec gotty --permit-write --reconnect bash -c "ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t ${SSH_USER}@host.docker.internal \"export TERM=xterm-256color; exec bash -l\""' >> /entrypoint.sh && \
+    echo '  # Enable permit-arguments to allow URL parameters like ?arg=btop' >> /entrypoint.sh && \
+    echo '  exec gotty --permit-write --permit-arguments --reconnect bash -c '"'"'CMD="${1:-bash -l}"; ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t '"'"'"${SSH_USER}"'"'"'@host.docker.internal "export TERM=xterm-256color; exec $CMD"'"'"' -- "$@"' >> /entrypoint.sh && \
     echo 'else' >> /entrypoint.sh && \
     echo '  exec gotty "$@"' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
