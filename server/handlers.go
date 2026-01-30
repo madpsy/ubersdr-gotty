@@ -178,24 +178,8 @@ func (server *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		// Use the friendly name from URL parameter
 		titleStr = customTitle
 	} else {
-		// Fall back to template-based title
-		titleVars := server.titleVariables(
-			[]string{"server", "master"},
-			map[string]map[string]interface{}{
-				"server": server.options.TitleVariables,
-				"master": map[string]interface{}{
-					"remote_addr": r.RemoteAddr,
-				},
-			},
-		)
-
-		titleBuf := new(bytes.Buffer)
-		err := server.titleTemplate.Execute(titleBuf, titleVars)
-		if err != nil {
-			http.Error(w, "Internal Server Error", 500)
-			return
-		}
-		titleStr = titleBuf.String()
+		// Use a generic placeholder - the terminal will set the real title via escape sequences
+		titleStr = "Terminal"
 	}
 
 	indexVars := map[string]interface{}{
