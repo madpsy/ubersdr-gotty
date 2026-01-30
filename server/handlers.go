@@ -169,29 +169,41 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn) e
 }
 
 func (server *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
-	titleVars := server.titleVariables(
-		[]string{"server", "master"},
-		map[string]map[string]interface{}{
-			"server": server.options.TitleVariables,
-			"master": map[string]interface{}{
-				"remote_addr": r.RemoteAddr,
-			},
-		},
-	)
+	// Check for 'name' parameter in URL - use it as title if present
+	queryParams := r.URL.Query()
+	customTitle := queryParams.Get("name")
 
-	titleBuf := new(bytes.Buffer)
-	err := server.titleTemplate.Execute(titleBuf, titleVars)
-	if err != nil {
-		http.Error(w, "Internal Server Error", 500)
-		return
+	var titleStr string
+	if customTitle != "" {
+		// Use the friendly name from URL parameter
+		titleStr = customTitle
+	} else {
+		// Fall back to template-based title
+		titleVars := server.titleVariables(
+			[]string{"server", "master"},
+			map[string]map[string]interface{}{
+				"server": server.options.TitleVariables,
+				"master": map[string]interface{}{
+					"remote_addr": r.RemoteAddr,
+				},
+			},
+		)
+
+		titleBuf := new(bytes.Buffer)
+		err := server.titleTemplate.Execute(titleBuf, titleVars)
+		if err != nil {
+			http.Error(w, "Internal Server Error", 500)
+			return
+		}
+		titleStr = titleBuf.String()
 	}
 
 	indexVars := map[string]interface{}{
-		"title": titleBuf.String(),
+		"title": titleStr,
 	}
 
 	indexBuf := new(bytes.Buffer)
-	err = server.indexTemplate.Execute(indexBuf, indexVars)
+	err := server.indexTemplate.Execute(indexBuf, indexVars)
 	if err != nil {
 		http.Error(w, "Internal Server Error", 500)
 		return
