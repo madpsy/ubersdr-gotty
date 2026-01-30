@@ -376,6 +376,21 @@
             </div>
         </div>
 
+        <!-- Quick Launch Section -->
+        <div style="background: white; border-radius: 12px; padding: 24px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <h2 style="color: #333; font-size: 20px; margin-bottom: 16px;">🚀 Quick Launch</h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 16px;">Launch or attach to predefined sessions</p>
+            
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button class="btn" style="background: #48bb78; color: white; padding: 12px 24px;" onclick="quickLaunch('btop', 'btop')">
+                    📊 btop
+                </button>
+                <button class="btn" style="background: #4299e1; color: white; padding: 12px 24px;" onclick="quickLaunch('htop', 'htop')">
+                    📈 htop
+                </button>
+            </div>
+        </div>
+
         <!-- Command Execution Section -->
         <div style="background: white; border-radius: 12px; padding: 24px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
             <h2 style="color: #333; font-size: 20px; margin-bottom: 16px;">⚡ Execute Command</h2>
@@ -661,6 +676,23 @@
                 'terminal_' + name,
                 `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`
             );
+        }
+
+        function quickLaunch(sessionName, command) {
+            // Check if a session with this name already exists
+            const existingSession = sessions.find(s =>
+                s.name === sessionName || s.window_name === sessionName
+            );
+            
+            if (existingSession) {
+                // Session exists, attach to it
+                openPopout(`/?session=${encodeURIComponent(existingSession.name)}`, sessionName);
+            } else {
+                // Session doesn't exist, create new one with predefined name
+                const sessionId = 'quick-' + sessionName + '-' + Date.now();
+                const url = `/?session=${encodeURIComponent(sessionId)}&name=${encodeURIComponent(sessionName)}&arg=${encodeURIComponent(command)}`;
+                openPopout(url, sessionName);
+            }
         }
 
         async function destroySession(name) {
