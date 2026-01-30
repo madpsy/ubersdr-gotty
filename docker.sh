@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# Extract version from Makefile
+VERSION=$(grep -oP '^VERSION = \K.*' Makefile)
+IMAGE=madpsy/ubersdr-gotty
+
+# Parse command line flags
+TAG_LATEST=true
+NO_CACHE=""
+
+for arg in "$@"; do
+    case $arg in
+        --no-latest)
+            TAG_LATEST=false
+            echo "Running in --no-latest mode (will not tag as latest)"
+            ;;
+        --no-cache)
+            NO_CACHE="--no-cache"
+            echo "Running in --no-cache mode (will rebuild all layers)"
+            ;;
+        *)
+            echo "Unknown option: $arg"
+            echo "Usage: $0 [--no-latest] [--no-cache]"
+            exit 1
+            ;;
+    esac
+done
+
+echo "Ensure Makefile VERSION has been version bumped"
+echo "Current version: $VERSION"
+echo ""
+read -p "Press any key to continue..." -n1 -s
+echo ""
+
+# Build Docker image with version tag
+echo "Building ubersdr-gotty Docker image..."
+if ! docker build $NO_CACHE -t $IMAGE:$VERSION -f Dockerfile .; then
+    echo "ERROR: Docker build failed!"
+    exit 1
+fi
+
+echo "Build successful!"
+
+# Tag version as latest (unless --no-latest flag is set)
+if [ "$TAG_LATEST" = true ]; then
+    echo "Tagging as latest..."
+    docker tag $IMAGE:$VERSION $IMAGE:latest
+else
+    echo "Skipping 'latest' tag (--no-latest flag set)"
+fi
+
+# Push tags
+echo "Pushing to Docker Hub..."
+docker push $IMAGE:$VERSION
+
+if [ "$TAG_LATEST" = true ]; then
+    docker push $IMAGE:latest
+fi
+
+# Commit and push version changes (unless --no-latest flag is set)
+if [ "$TAG_LATEST" = true ]; then
+    echo "Committing and pushing to git..."
+    git add .
+    git commit -m "$VERSION"
+    git push -v
+else
+    echo "Skipping git commit and push (--no-latest flag set)"
+fi
+
+echo "Done!"
