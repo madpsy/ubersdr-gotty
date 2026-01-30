@@ -31,6 +31,7 @@ type Server struct {
 	upgrader      *websocket.Upgrader
 	indexTemplate *template.Template
 	titleTemplate *noesctmpl.Template
+	connections   *ConnectionTracker
 }
 
 // New creates a new instance of Server.
@@ -80,6 +81,7 @@ func New(factory Factory, options *Options) (*Server, error) {
 		},
 		indexTemplate: indexTemplate,
 		titleTemplate: titleTemplate,
+		connections:   NewConnectionTracker(),
 	}, nil
 }
 
@@ -220,13 +222,17 @@ func (server *Server) setupHandlers(ctx context.Context, cancel context.CancelFu
 	// Add REST API endpoints for session management
 	sessionListHandler := http.Handler(http.HandlerFunc(server.handleSessionList))
 	sessionDestroyHandler := http.Handler(http.HandlerFunc(server.handleSessionDestroy))
+	connectionsListHandler := http.Handler(http.HandlerFunc(server.handleConnectionsList))
 	if server.options.EnableBasicAuth {
 		sessionListHandler = server.wrapBasicAuth(sessionListHandler, server.options.Credential)
 		sessionDestroyHandler = server.wrapBasicAuth(sessionDestroyHandler, server.options.Credential)
+		connectionsListHandler = server.wrapBasicAuth(connectionsListHandler, server.options.Credential)
 	}
 	wsMux.Handle(pathPrefix+"api/sessions", server.wrapLogger(sessionListHandler))
 	wsMux.Handle(pathPrefix+"api/sessions/destroy", server.wrapLogger(sessionDestroyHandler))
+	wsMux.Handle(pathPrefix+"api/connections", server.wrapLogger(connectionsListHandler))
 	log.Printf("Session API enabled at: %sapi/sessions", pathPrefix)
+	log.Printf("Connections API enabled at: %sapi/connections", pathPrefix)
 
 	siteHandler = http.Handler(wsMux)
 

@@ -228,6 +228,30 @@ func parseWindows(w string) int {
 	return count
 }
 
+// ConnectionsListResponse represents the response for listing connections
+type ConnectionsListResponse struct {
+	Connections []*ConnectionInfo `json:"connections"`
+	Count       int               `json:"count"`
+}
+
+// handleConnectionsList handles GET requests to list active connections
+func (server *Server) handleConnectionsList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	connections := server.connections.List()
+
+	response := ConnectionsListResponse{
+		Connections: connections,
+		Count:       len(connections),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 // Helper function to parse window names from tmux output
 // Returns a map of session_name -> first_window_name
 func parseWindowNames(output string) map[string]string {

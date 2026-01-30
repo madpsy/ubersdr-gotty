@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync/atomic"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
@@ -120,6 +121,13 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn) e
 		return errors.Wrapf(err, "failed to parse arguments")
 	}
 	params := query.Query()
+
+	// Track this connection
+	connID := fmt.Sprintf("%s-%d", conn.RemoteAddr().String(), time.Now().UnixNano())
+	sessionName := params.Get("session")
+	server.connections.Add(connID, conn.RemoteAddr().String(), sessionName, init.Arguments)
+	defer server.connections.Remove(connID)
+
 	var slave Slave
 	slave, err = server.factory.New(params)
 	if err != nil {
