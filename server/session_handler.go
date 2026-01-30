@@ -14,6 +14,7 @@ import (
 // SessionInfo represents information about a tmux session
 type SessionInfo struct {
 	Name       string `json:"name"`
+	WindowName string `json:"window_name,omitempty"`
 	Created    string `json:"created"`
 	Windows    int    `json:"windows"`
 	Attached   bool   `json:"attached"`
@@ -77,6 +78,18 @@ func (server *Server) handleSessionList(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Fetch window names for all sessions
+	windowCmd := exec.Command("ssh",
+		"-q",
+		"-o", "StrictHostKeyChecking=no",
+		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "ConnectTimeout=5",
+		fmt.Sprintf("%s@host.docker.internal", getSSHUser()),
+		"tmux list-windows -a -F '#{session_name}|#{window_index}|#{window_name}' 2>/dev/null",
+	)
+	windowOutput, _ := windowCmd.CombinedOutput()
+	windowMap := parseWindowNames(string(windowOutput))
+
 	// Parse tmux output
 	lines := strings.Split(outputStr, "\n")
 	sessions := make([]SessionInfo, 0, len(lines))
@@ -91,8 +104,10 @@ func (server *Server) handleSessionList(w http.ResponseWriter, r *http.Request) 
 			continue
 		}
 
+		sessionName := parts[0]
 		session := SessionInfo{
-			Name:       parts[0],
+			Name:       sessionName,
+			WindowName: windowMap[sessionName],
 			Created:    formatTimestamp(parts[1]),
 			Windows:    parseWindows(parts[2]),
 			Attached:   parts[3] == "1",
@@ -211,4 +226,34 @@ func parseWindows(w string) int {
 	var count int
 	fmt.Sscanf(w, "%d", &count)
 	return count
+}
+
+// Helper function to parse window names from tmux output
+// Returns a map of session_name -> first_window_name
+func parseWindowNames(output string) map[string]string {
+	windowMap := make(map[string]string)
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		parts := strings.Split(line, "|")
+		if len(parts) != 3 {
+			continue
+		}
+
+		sessionName := parts[0]
+		windowIndex := parts[1]
+		windowName := parts[2]
+
+		// Only store the first window (index 0) name for each session
+		// This is where we store the friendly name
+		if windowIndex == "0" && windowName != "" {
+			windowMap[sessionName] = windowName
+		}
+	}
+
+	return windowMap
 }

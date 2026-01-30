@@ -123,6 +123,13 @@
             gap: 10px;
         }
 
+        .session-id {
+            font-size: 12px;
+            color: #999;
+            font-weight: 400;
+            font-family: monospace;
+        }
+
         .session-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -206,6 +213,118 @@
             margin-bottom: 20px;
         }
 
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            margin-bottom: 24px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .modal-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .modal-body {
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group .hint {
+            color: #999;
+            font-size: 12px;
+            margin-top: 4px;
+            font-family: monospace;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -232,7 +351,7 @@
             <button class="btn btn-primary" onclick="refreshSessions()">
                 <span id="refresh-text">🔄 Refresh</span>
             </button>
-            <button class="btn btn-success" onclick="createNewSession()">➕ New Session</button>
+            <button class="btn btn-success" onclick="showNewSessionModal()">➕ New Session</button>
             <a href="/" class="btn" style="background: #718096; color: white;">🖥️ Direct Terminal</a>
             <span style="margin-left: auto; color: #666; font-size: 14px;">
                 <span id="session-count">0</span> active sessions
@@ -248,8 +367,30 @@
         </div>
     </div>
 
+    <!-- New Session Modal -->
+    <div id="newSessionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Session</h2>
+                <p>Enter a friendly name for your session</p>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="sessionName">Session Name (optional)</label>
+                    <input type="text" id="sessionName" placeholder="e.g., My Dev Session" autofocus>
+                    <div class="hint" id="sessionIdHint"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeNewSessionModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createSession()">Create Session</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let sessions = [];
+        let currentSessionId = '';
 
         async function fetchSessions() {
             try {
@@ -277,7 +418,7 @@
                         </svg>
                         <h2>No Active Sessions</h2>
                         <p>Create a new session to get started</p>
-                        <button class="btn btn-primary" onclick="createNewSession()">➕ Create Session</button>
+                        <button class="btn btn-primary" onclick="showNewSessionModal()">➕ Create Session</button>
                     </div>
                 `;
                 return;
@@ -303,11 +444,16 @@
                 ? '<span class="session-badge badge-attached">● Attached</span>'
                 : '<span class="session-badge badge-detached">○ Detached</span>';
 
+            // Extract friendly name from window name if available
+            const displayName = session.window_name || session.name;
+            const showId = session.window_name ? `<div class="session-id">${escapeHtml(session.name)}</div>` : '';
+
             card.innerHTML = `
                 <div class="session-name">
-                    ${escapeHtml(session.name)}
+                    ${escapeHtml(displayName)}
                     ${attachedBadge}
                 </div>
+                ${showId}
                 <div class="session-info">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -338,6 +484,52 @@
 
             return card;
         }
+
+        function showNewSessionModal() {
+            currentSessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+            document.getElementById('sessionIdHint').textContent = 'Session ID: ' + currentSessionId;
+            document.getElementById('sessionName').value = '';
+            document.getElementById('newSessionModal').classList.add('show');
+            document.getElementById('sessionName').focus();
+        }
+
+        function closeNewSessionModal() {
+            document.getElementById('newSessionModal').classList.remove('show');
+        }
+
+        function createSession() {
+            const friendlyName = document.getElementById('sessionName').value.trim();
+            
+            let url = `/?session=${encodeURIComponent(currentSessionId)}`;
+            if (friendlyName) {
+                url += `&name=${encodeURIComponent(friendlyName)}`;
+            }
+            
+            window.location.href = url;
+        }
+
+        // Allow Enter key to create session
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('sessionName').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    createSession();
+                }
+            });
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeNewSessionModal();
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('newSessionModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeNewSessionModal();
+            }
+        });
 
         function attachSession(name) {
             window.location.href = `/?session=${encodeURIComponent(name)}`;
@@ -385,23 +577,6 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
-        }
-
-        function createNewSession() {
-            // Auto-generate unique session ID
-            const sessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
-            
-            // Optionally ask for friendly name
-            const friendlyName = prompt('Enter a friendly name for the session (optional):\n\nSession ID: ' + sessionId, '');
-            
-            // Always use the unique ID for the tmux session
-            // Pass friendly name as separate parameter if provided
-            let url = `/?session=${encodeURIComponent(sessionId)}`;
-            if (friendlyName && friendlyName.trim()) {
-                url += `&name=${encodeURIComponent(friendlyName.trim())}`;
-            }
-            
-            window.location.href = url;
         }
 
         // Initial load
