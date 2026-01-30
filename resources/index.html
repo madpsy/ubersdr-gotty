@@ -6,40 +6,6 @@
     <link rel="stylesheet" href="css/index.css" />
     <link rel="stylesheet" href="css/xterm.css" />
     <link rel="stylesheet" href="css/xterm_customize.css" />
-    <script>
-      // Set document title based on URL parameters - run immediately
-      (function() {
-        const params = new URLSearchParams(window.location.search);
-        const sessionName = params.get('name');
-        const sessionId = params.get('session');
-
-        console.log('URL params:', { sessionName, sessionId, fullURL: window.location.href });
-
-        if (sessionName) {
-          // If friendly name is provided, use it
-          document.title = sessionName;
-          console.log('Set title to name:', sessionName);
-        } else if (sessionId) {
-          // If only session ID, use that
-          document.title = sessionId;
-          console.log('Set title to session ID:', sessionId);
-        }
-        // Otherwise keep the default title from server
-      })();
-
-      // Also set title after page loads to ensure it sticks
-      window.addEventListener('DOMContentLoaded', function() {
-        const params = new URLSearchParams(window.location.search);
-        const sessionName = params.get('name');
-        const sessionId = params.get('session');
-
-        if (sessionName) {
-          document.title = sessionName;
-        } else if (sessionId) {
-          document.title = sessionId;
-        }
-      });
-    </script>
   </head>
   <body>
     <div id="terminal"></div>
