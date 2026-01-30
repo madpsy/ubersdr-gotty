@@ -424,8 +424,9 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="sessionName">Session Name (optional)</label>
-                    <input type="text" id="sessionName" placeholder="e.g., My Dev Session" autofocus>
+                    <input type="text" id="sessionName" placeholder="e.g., My Dev Session" autofocus oninput="validateSessionName()">
                     <div class="hint" id="sessionIdHint"></div>
+                    <div id="sessionNameError" style="color: #f56565; font-size: 12px; margin-top: 4px; display: none;"></div>
                 </div>
                 <div class="form-group">
                     <label for="sessionCommand">Command (optional)</label>
@@ -569,11 +570,42 @@
 
         function closeNewSessionModal() {
             document.getElementById('newSessionModal').classList.remove('show');
+            // Clear error message when closing
+            document.getElementById('sessionNameError').style.display = 'none';
+        }
+
+        function validateSessionName() {
+            const friendlyName = document.getElementById('sessionName').value.trim();
+            const errorDiv = document.getElementById('sessionNameError');
+            
+            if (!friendlyName) {
+                errorDiv.style.display = 'none';
+                return true;
+            }
+            
+            // Check if a session with this name already exists
+            const existingSession = sessions.find(s =>
+                s.window_name === friendlyName || s.name === friendlyName
+            );
+            
+            if (existingSession) {
+                errorDiv.textContent = '⚠️ A session with this name already exists';
+                errorDiv.style.display = 'block';
+                return false;
+            } else {
+                errorDiv.style.display = 'none';
+                return true;
+            }
         }
 
         function createSession() {
             const friendlyName = document.getElementById('sessionName').value.trim();
             const command = document.getElementById('sessionCommand').value.trim();
+            
+            // Validate session name before creating
+            if (friendlyName && !validateSessionName()) {
+                return; // Don't create if validation fails
+            }
             
             let url = `/?session=${encodeURIComponent(currentSessionId)}`;
             if (friendlyName) {
