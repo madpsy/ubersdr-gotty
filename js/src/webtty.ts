@@ -86,7 +86,10 @@ export class WebTTY {
                 };
 
                 this.term.onResize(resizeHandler);
-                resizeHandler(termInfo.columns, termInfo.rows);
+                // Delay initial resize to ensure auth message is processed first
+                setTimeout(() => {
+                    resizeHandler(termInfo.columns, termInfo.rows);
+                }, 100);
 
                 this.term.onInput(
                     (input: string) => {

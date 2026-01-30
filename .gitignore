@@ -1,0 +1,64 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build artifacts
+gotty
+*.test
+*.out
+/builds/
+
+# Go dependency management
+/vendor/
+go.sum
+
+# Go workspace file
+go.work
+
+# Build artifacts
+/bindata/
+server/asset.go
+
+# JavaScript/Node.js
+js/node_modules/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Test and temporary files
+*.tmp
+*.bak
+*.orig
+
+# SSH keys (if accidentally placed in project)
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Coverage and profiling
+*.coverprofile
+*.prof
+coverage.txt
+coverage.html
