@@ -34,6 +34,11 @@ export class Xterm {
             window.addEventListener("resize", () => { this.resizeListener(); });
         });
 
+        // Handle title changes from terminal escape sequences
+        this.term.on("title", (title: string) => {
+            this.setWindowTitle(title);
+        });
+
         this.term.open(elem, true);
 
         this.decoder = new lib.UTF8Decoder()
