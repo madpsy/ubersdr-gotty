@@ -42,8 +42,16 @@ func (factory *Factory) New(params map[string][]string) (server.Slave, error) {
 	copy(argv, factory.argv)
 
 	// Handle session parameter for tmux session management
+	// Session ID is always the unique identifier for tmux
 	if params["session"] != nil && len(params["session"]) > 0 {
-		argv = append(argv, "session="+params["session"][0])
+		sessionId := params["session"][0]
+		argv = append(argv, "session="+sessionId)
+
+		// If a friendly name is provided, pass it as well
+		// The wrapper can use this for display purposes
+		if params["name"] != nil && len(params["name"]) > 0 {
+			argv = append(argv, "name="+params["name"][0])
+		}
 	}
 
 	// Handle arg parameters (original GoTTY behavior)

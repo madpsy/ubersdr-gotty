@@ -394,10 +394,14 @@
             // Optionally ask for friendly name
             const friendlyName = prompt('Enter a friendly name for the session (optional):\n\nSession ID: ' + sessionId, '');
             
-            // Use friendly name if provided, otherwise use auto-generated ID
-            const finalName = (friendlyName && friendlyName.trim()) ? friendlyName.trim() : sessionId;
+            // Always use the unique ID for the tmux session
+            // Pass friendly name as separate parameter if provided
+            let url = `/?session=${encodeURIComponent(sessionId)}`;
+            if (friendlyName && friendlyName.trim()) {
+                url += `&name=${encodeURIComponent(friendlyName.trim())}`;
+            }
             
-            window.location.href = `/?session=${encodeURIComponent(finalName)}`;
+            window.location.href = url;
         }
 
         // Initial load
