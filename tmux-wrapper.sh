@@ -31,8 +31,11 @@ if [ -n "$SESSION_NAME" ]; then
     # Attach to existing session
     exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "tmux attach-session -t '$SESSION_NAME'"
   else
-    # Create new session with command
-    exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "tmux new-session -s '$SESSION_NAME' $CMD"
+    # Create new detached session first, then attach to it
+    # This ensures the session persists when we disconnect
+    ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SSH_USER}@host.docker.internal" "tmux new-session -d -s '$SESSION_NAME' $CMD"
+    # Now attach to the session
+    exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "tmux attach-session -t '$SESSION_NAME'"
   fi
 else
   # No session - direct SSH without tmux (normal mode)
