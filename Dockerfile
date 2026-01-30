@@ -44,7 +44,7 @@ WORKDIR /app
 
 COPY --from=go-builder /app/gotty /usr/local/bin/gotty
 
-# Create entrypoint script to handle SSH key permissions
+# Create entrypoint script to handle SSH key permissions and username detection
 RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo 'if [ -d /ssh-keys ]; then' >> /entrypoint.sh && \
     echo '  mkdir -p /root/.ssh' >> /entrypoint.sh && \
@@ -53,11 +53,23 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo '  chmod 600 /root/.ssh/* 2>/dev/null || true' >> /entrypoint.sh && \
     echo '  chmod 644 /root/.ssh/*.pub 2>/dev/null || true' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
-    echo 'exec gotty "$@"' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Detect username from SSH keys ownership or use SSH_USER env var' >> /entrypoint.sh && \
+    echo 'if [ -z "$SSH_USER" ] && [ -d /ssh-keys ]; then' >> /entrypoint.sh && \
+    echo '  SSH_USER=$(stat -c "%U" /ssh-keys 2>/dev/null || echo "root")' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo 'SSH_USER=${SSH_USER:-root}' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# If no custom command provided, use default SSH command with detected user' >> /entrypoint.sh && \
+    echo 'if [ "$#" -eq 0 ] || [ "$1" = "--permit-write" ]; then' >> /entrypoint.sh && \
+    echo '  exec gotty --permit-write --reconnect bash -c "ssh ${SSH_USER}@host.docker.internal"' >> /entrypoint.sh && \
+    echo 'else' >> /entrypoint.sh && \
+    echo '  exec gotty "$@"' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
 # Expose default gotty port
 EXPOSE 8080
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["--permit-write", "--reconnect", "bash", "-c", "ssh host.docker.internal"]
+CMD []
