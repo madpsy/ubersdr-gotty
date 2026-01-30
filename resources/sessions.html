@@ -525,6 +525,9 @@
                     <button class="btn btn-primary" onclick="attachSession('${escapeHtml(session.name)}')">
                         🔗 Attach
                     </button>
+                    <button class="btn btn-success" onclick="popoutSession('${escapeHtml(session.name)}')">
+                        🪟 Pop-out
+                    </button>
                     <button class="btn btn-danger" onclick="destroySession('${escapeHtml(session.name)}')">
                         🗑️ Destroy
                     </button>
@@ -622,6 +625,20 @@
 
         function attachSession(name) {
             window.location.href = `/?session=${encodeURIComponent(name)}`;
+        }
+
+        function popoutSession(name) {
+            const url = `/?session=${encodeURIComponent(name)}`;
+            const width = 1000;
+            const height = 700;
+            const left = (screen.width - width) / 2;
+            const top = (screen.height - height) / 2;
+            
+            window.open(
+                url,
+                'terminal_' + name,
+                `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`
+            );
         }
 
         async function destroySession(name) {
