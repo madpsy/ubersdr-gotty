@@ -9,6 +9,23 @@
   </head>
   <body>
     <div id="terminal"></div>
+    <script>
+      // Set document title based on URL parameters
+      (function() {
+        const params = new URLSearchParams(window.location.search);
+        const sessionName = params.get('name');
+        const sessionId = params.get('session');
+        
+        if (sessionName) {
+          // If friendly name is provided, use it
+          document.title = sessionName;
+        } else if (sessionId) {
+          // If only session ID, use that
+          document.title = sessionId;
+        }
+        // Otherwise keep the default title from server
+      })();
+    </script>
     <script src="./auth_token.js"></script>
     <script src="./config.js"></script>
     <script src="./js/gotty-bundle.js"></script>

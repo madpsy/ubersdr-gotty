@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Run ubersdr-gotty container with SSH access to Docker host
-# Usage: ./run.sh [ssh_key_path]
-# Example: ./run.sh ~/.ssh/my_key
+# Usage: ./run.sh [ssh_key_path] [remote_host]
+# Example: ./run.sh ~/.ssh/my_key myserver.local
 #
 # Access the terminal at http://localhost:9980/
 # Run specific commands via URL: http://localhost:9980/?arg=btop
@@ -18,6 +18,7 @@
 #   POST http://localhost:9980/api/sessions/destroy?name=SESSION - Destroy a session
 
 SSH_KEY_PATH="${1:-$HOME/.ssh}"
+REMOTE_HOST="${2:-$(hostname)}"
 
 if [ -f "$SSH_KEY_PATH" ]; then
     # Specific key file provided
@@ -39,6 +40,7 @@ if [ -f "$SSH_KEY_PATH" ]; then
       -v "$SSH_KEY_PATH:/root/.ssh/id_rsa:ro" \
       $([ -f "$PUB_KEY" ] && echo "-v $PUB_KEY:/root/.ssh/id_rsa.pub:ro") \
       -e USER=$USER \
+      -e REMOTE_HOST="$REMOTE_HOST" \
       madpsy/ubersdr-gotty:latest
       
 elif [ -d "$SSH_KEY_PATH" ]; then
@@ -48,6 +50,7 @@ elif [ -d "$SSH_KEY_PATH" ]; then
       --add-host=host.docker.internal:host-gateway \
       -v "$SSH_KEY_PATH:/ssh-keys:ro" \
       -e USER=$USER \
+      -e REMOTE_HOST="$REMOTE_HOST" \
       madpsy/ubersdr-gotty:latest
       
 else

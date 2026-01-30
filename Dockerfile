@@ -68,10 +68,14 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo '# Use SSH_USER env var, fallback to USER env var, or default to current user' >> /entrypoint.sh && \
     echo 'export SSH_USER=${SSH_USER:-${USER:-$(whoami)}}' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
+    echo '# Set terminal title based on user and host' >> /entrypoint.sh && \
+    echo 'REMOTE_HOST=${REMOTE_HOST:-host.docker.internal}' >> /entrypoint.sh && \
+    echo 'TITLE="${SSH_USER}@${REMOTE_HOST}"' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
     echo '# If no custom command provided, use wrapper (handles both normal and session modes)' >> /entrypoint.sh && \
     echo 'if [ "$#" -eq 0 ] || [ "$1" = "--permit-write" ]; then' >> /entrypoint.sh && \
     echo '  # Wrapper decides: no session param = direct SSH, session param = tmux' >> /entrypoint.sh && \
-    echo '  exec gotty --permit-write --permit-arguments --reconnect --title-format "Terminal" /usr/local/bin/tmux-wrapper.sh' >> /entrypoint.sh && \
+    echo '  exec gotty --permit-write --permit-arguments --reconnect --title-format "$TITLE" /usr/local/bin/tmux-wrapper.sh' >> /entrypoint.sh && \
     echo 'else' >> /entrypoint.sh && \
     echo '  exec gotty "$@"' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
