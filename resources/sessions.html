@@ -617,6 +617,9 @@
             
             openPopout(url, friendlyName || currentSessionId);
             closeNewSessionModal();
+            
+            // Refresh after creating session
+            refreshAfterAction(2000); // Longer delay for new session creation
         }
 
         function showDirectCommandModal() {
@@ -717,6 +720,9 @@
                 'terminal_' + sessionId,
                 `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`
             );
+            
+            // Refresh after opening popout
+            refreshAfterAction();
         }
 
         function quickLaunch(sessionName, command) {
@@ -733,6 +739,9 @@
                 const sessionId = 'quick-' + sessionName + '-' + Date.now();
                 const url = `/?session=${encodeURIComponent(sessionId)}&name=${encodeURIComponent(sessionName)}&arg=${encodeURIComponent(command)}`;
                 openPopout(url, sessionName);
+                
+                // Refresh after creating new quick launch session
+                refreshAfterAction(2000);
             }
         }
 
@@ -764,6 +773,13 @@
             refreshBtn.innerHTML = '<span class="spinner"></span> Refreshing...';
             await fetchSessions();
             refreshBtn.textContent = '🔄 Refresh';
+        }
+
+        function refreshAfterAction(delayMs = 1000) {
+            // Refresh the session list after a short delay to allow backend to update
+            setTimeout(() => {
+                fetchSessions();
+            }, delayMs);
         }
 
         function showError(message) {
