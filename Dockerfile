@@ -44,8 +44,13 @@ WORKDIR /app
 
 COPY --from=go-builder /app/gotty /usr/local/bin/gotty
 
+# Create a wrapper script for SSH
+RUN echo '#!/bin/bash' > /usr/local/bin/ssh-wrapper.sh && \
+    echo 'exec ssh "$@"' >> /usr/local/bin/ssh-wrapper.sh && \
+    chmod +x /usr/local/bin/ssh-wrapper.sh
+
 # Expose default gotty port
 EXPOSE 8080
 
 ENTRYPOINT ["gotty"]
-CMD ["--permit-write", "--reconnect", "ssh", "host.docker.internal"]
+CMD ["--permit-write", "--reconnect", "/usr/local/bin/ssh-wrapper.sh", "host.docker.internal"]
