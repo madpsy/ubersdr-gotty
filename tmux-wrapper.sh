@@ -46,18 +46,23 @@ fi
 
 # If session name provided, use tmux
 if [ -n "$SESSION_NAME" ]; then
+  echo "DEBUG: Using tmux mode with session: $SESSION_NAME" >> /tmp/wrapper-debug.log
   # Check if tmux session exists
   if ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SSH_USER}@host.docker.internal" "tmux has-session -t '$SESSION_NAME' 2>/dev/null"; then
+    echo "DEBUG: Attaching to existing session" >> /tmp/wrapper-debug.log
     # Attach to existing session
-    exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "tmux attach-session -t '$SESSION_NAME'"
+    exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "TERM=screen-256color tmux attach-session -t '$SESSION_NAME'"
   else
+    echo "DEBUG: Creating new session" >> /tmp/wrapper-debug.log
     # Create new detached session first, then attach to it
     # This ensures the session persists when we disconnect
-    ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SSH_USER}@host.docker.internal" "tmux new-session -d -s '$SESSION_NAME' $CMD"
+    # Set TERM to screen-256color for tmux compatibility
+    ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SSH_USER}@host.docker.internal" "TERM=screen-256color tmux new-session -d -s '$SESSION_NAME' $CMD"
     # Now attach to the session
-    exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "tmux attach-session -t '$SESSION_NAME'"
+    exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "TERM=screen-256color tmux attach-session -t '$SESSION_NAME'"
   fi
 else
+  echo "DEBUG: Using direct SSH mode (no session)" >> /tmp/wrapper-debug.log
   # No session - direct SSH without tmux (normal mode)
   exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t "${SSH_USER}@host.docker.internal" "export TERM=xterm-256color; exec $CMD"
 fi
