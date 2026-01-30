@@ -7,7 +7,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/kr/pty"
+	"github.com/creack/pty"
 	"github.com/pkg/errors"
 )
 
@@ -31,7 +31,14 @@ type LocalCommand struct {
 func New(command string, argv []string, options ...Option) (*LocalCommand, error) {
 	cmd := exec.Command(command, argv...)
 
-	pty, err := pty.Start(cmd)
+	// Set up SysProcAttr to work in containers - use Setsid without Setctty
+	// This prevents the "Setctty set but Ctty not valid in child" error
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setsid: true,
+	}
+
+	// Create PTY - pty.Start will use our SysProcAttr if Setctty is not set
+	ptyFile, err := pty.Start(cmd)
 	if err != nil {
 		// todo close cmd?
 		return nil, errors.Wrapf(err, "failed to start command `%s`", command)
@@ -46,7 +53,7 @@ func New(command string, argv []string, options ...Option) (*LocalCommand, error
 		closeTimeout: DefaultCloseTimeout,
 
 		cmd:       cmd,
-		pty:       pty,
+		pty:       ptyFile,
 		ptyClosed: ptyClosed,
 	}
 
