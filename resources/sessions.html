@@ -365,6 +365,28 @@
                 <p>Loading sessions...</p>
             </div>
         </div>
+
+        <!-- Command Execution Section -->
+        <div style="background: white; border-radius: 12px; padding: 24px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <h2 style="color: #333; font-size: 20px; margin-bottom: 16px;">⚡ Execute Command</h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 16px;">Run a single command on the host and see the output</p>
+            
+            <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <input type="text" id="commandInput" placeholder="Enter command (e.g., ls -la, uptime, df -h)"
+                    style="flex: 1; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-family: monospace;">
+                <button class="btn btn-primary" onclick="executeCommand()" style="white-space: nowrap;">
+                    ▶️ Execute
+                </button>
+            </div>
+            
+            <div id="commandOutput" style="display: none;">
+                <div style="background: #1a202c; color: #e2e8f0; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 13px; white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></div>
+                <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center; font-size: 12px; color: #666;">
+                    <span id="commandStatus"></span>
+                    <span id="commandDuration"></span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- New Session Modal -->
@@ -578,6 +600,88 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // Command execution functionality
+        async function executeCommand() {
+            const input = document.getElementById('commandInput');
+            const command = input.value.trim();
+            
+            if (!command) {
+                showError('Please enter a command');
+                return;
+            }
+            
+            const outputDiv = document.getElementById('commandOutput');
+            const outputContent = outputDiv.querySelector('div');
+            const statusSpan = document.getElementById('commandStatus');
+            const durationSpan = document.getElementById('commandDuration');
+            
+            // Show output area and set loading state
+            outputDiv.style.display = 'block';
+            outputContent.textContent = '⏳ Executing command...\n';
+            statusSpan.textContent = '';
+            durationSpan.textContent = '';
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch('/api/exec', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ command: command })
+                });
+                
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Display the output
+                let output = '';
+                if (data.stdout) {
+                    output += data.stdout;
+                }
+                if (data.stderr) {
+                    output += data.stderr;
+                }
+                if (!output) {
+                    output = '(no output)';
+                }
+                
+                outputContent.textContent = output;
+                
+                // Show status
+                if (data.exit_code === 0) {
+                    statusSpan.innerHTML = '✅ <span style="color: #48bb78;">Success</span>';
+                } else {
+                    statusSpan.innerHTML = `❌ <span style="color: #f56565;">Exit code: ${data.exit_code}</span>`;
+                }
+                durationSpan.textContent = `⏱️ ${duration}s`;
+                
+            } catch (error) {
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                outputContent.textContent = `Error: ${error.message}`;
+                statusSpan.innerHTML = '❌ <span style="color: #f56565;">Failed</span>';
+                durationSpan.textContent = `⏱️ ${duration}s`;
+            }
+        }
+        
+        // Allow Enter key to execute command
+        document.addEventListener('DOMContentLoaded', function() {
+            const commandInput = document.getElementById('commandInput');
+            if (commandInput) {
+                commandInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        executeCommand();
+                    }
+                });
+            }
+        });
 
         // Initial load
         fetchSessions();
