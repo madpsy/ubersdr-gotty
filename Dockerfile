@@ -44,6 +44,10 @@ WORKDIR /app
 
 COPY --from=go-builder /app/gotty /usr/local/bin/gotty
 
+# Copy the tmux wrapper script
+COPY tmux-wrapper.sh /usr/local/bin/tmux-wrapper.sh
+RUN chmod +x /usr/local/bin/tmux-wrapper.sh
+
 # Create entrypoint script to handle SSH key permissions and username detection
 RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo '# Ensure .ssh directory exists' >> /entrypoint.sh && \
@@ -62,49 +66,11 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
     echo '# Use SSH_USER env var, fallback to USER env var, or default to current user' >> /entrypoint.sh && \
-    echo 'SSH_USER=${SSH_USER:-${USER:-$(whoami)}}' >> /entrypoint.sh && \
+    echo 'export SSH_USER=${SSH_USER:-${USER:-$(whoami)}}' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
-    echo '# Create tmux session wrapper script' >> /entrypoint.sh && \
-    echo 'cat > /usr/local/bin/tmux-wrapper.sh << '"'"'WRAPPER_EOF'"'"'' >> /entrypoint.sh && \
-    echo '#!/bin/bash' >> /entrypoint.sh && \
-    echo '# Parse URL parameters from GoTTY' >> /entrypoint.sh && \
-    echo 'SESSION_NAME=""' >> /entrypoint.sh && \
-    echo 'CMD="bash -l"' >> /entrypoint.sh && \
-    echo '' >> /entrypoint.sh && \
-    echo '# First argument is the command (from ?arg parameter)' >> /entrypoint.sh && \
-    echo 'if [ -n "$1" ]; then' >> /entrypoint.sh && \
-    echo '  CMD="$1"' >> /entrypoint.sh && \
-    echo 'fi' >> /entrypoint.sh && \
-    echo '' >> /entrypoint.sh && \
-    echo '# Check for session parameter in remaining args' >> /entrypoint.sh && \
-    echo 'shift 2>/dev/null' >> /entrypoint.sh && \
-    echo 'for arg in "$@"; do' >> /entrypoint.sh && \
-    echo '  if [[ "$arg" == session=* ]]; then' >> /entrypoint.sh && \
-    echo '    SESSION_NAME="${arg#session=}"' >> /entrypoint.sh && \
-    echo '    break' >> /entrypoint.sh && \
-    echo '  fi' >> /entrypoint.sh && \
-    echo 'done' >> /entrypoint.sh && \
-    echo '' >> /entrypoint.sh && \
-    echo '# If session name provided, use tmux' >> /entrypoint.sh && \
-    echo 'if [ -n "$SESSION_NAME" ]; then' >> /entrypoint.sh && \
-    echo '  # Check if tmux session exists' >> /entrypoint.sh && \
-    echo '  if ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '"'"'"${SSH_USER}"'"'"'@host.docker.internal "tmux has-session -t '"'"'"$SESSION_NAME"'"'"' 2>/dev/null"; then' >> /entrypoint.sh && \
-    echo '    # Attach to existing session' >> /entrypoint.sh && \
-    echo '    exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t '"'"'"${SSH_USER}"'"'"'@host.docker.internal "tmux attach-session -t '"'"'"$SESSION_NAME"'"'"'"' >> /entrypoint.sh && \
-    echo '  else' >> /entrypoint.sh && \
-    echo '    # Create new session with command' >> /entrypoint.sh && \
-    echo '    exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t '"'"'"${SSH_USER}"'"'"'@host.docker.internal "tmux new-session -s '"'"'"$SESSION_NAME"'"'"' '"'"'"$CMD"'"'"'"' >> /entrypoint.sh && \
-    echo '  fi' >> /entrypoint.sh && \
-    echo 'else' >> /entrypoint.sh && \
-    echo '  # No session - direct SSH without tmux' >> /entrypoint.sh && \
-    echo '  exec ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t '"'"'"${SSH_USER}"'"'"'@host.docker.internal "export TERM=xterm-256color; exec '"'"'"$CMD"'"'"'"' >> /entrypoint.sh && \
-    echo 'fi' >> /entrypoint.sh && \
-    echo 'WRAPPER_EOF' >> /entrypoint.sh && \
-    echo 'chmod +x /usr/local/bin/tmux-wrapper.sh' >> /entrypoint.sh && \
-    echo '' >> /entrypoint.sh && \
-    echo '# If no custom command provided, use default SSH command with detected user' >> /entrypoint.sh && \
+    echo '# If no custom command provided, use wrapper (handles both normal and session modes)' >> /entrypoint.sh && \
     echo 'if [ "$#" -eq 0 ] || [ "$1" = "--permit-write" ]; then' >> /entrypoint.sh && \
-    echo '  # Enable permit-arguments to allow URL parameters like ?arg=btop&session=name' >> /entrypoint.sh && \
+    echo '  # Wrapper decides: no session param = direct SSH, session param = tmux' >> /entrypoint.sh && \
     echo '  exec gotty --permit-write --permit-arguments --reconnect /usr/local/bin/tmux-wrapper.sh' >> /entrypoint.sh && \
     echo 'else' >> /entrypoint.sh && \
     echo '  exec gotty "$@"' >> /entrypoint.sh && \
