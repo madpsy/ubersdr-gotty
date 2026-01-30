@@ -2,6 +2,10 @@
 # Tmux session wrapper for GoTTY
 # This script handles both normal SSH and session persistence via tmux
 
+# Debug logging
+echo "DEBUG: Wrapper called with args: $@" >> /tmp/wrapper-debug.log
+echo "DEBUG: Number of args: $#" >> /tmp/wrapper-debug.log
+
 # Get SSH user from environment
 SSH_USER=${SSH_USER:-${USER:-$(whoami)}}
 
@@ -11,11 +15,14 @@ CMD=""
 
 # Check all arguments for session parameter
 for arg in "$@"; do
+  echo "DEBUG: Processing arg: $arg" >> /tmp/wrapper-debug.log
   if [[ "$arg" == session=* ]]; then
     SESSION_NAME="${arg#session=}"
+    echo "DEBUG: Found session name: $SESSION_NAME" >> /tmp/wrapper-debug.log
   elif [[ "$arg" != arg=* ]] && [ -z "$CMD" ]; then
     # First non-session argument is the command
     CMD="$arg"
+    echo "DEBUG: Found command: $CMD" >> /tmp/wrapper-debug.log
   fi
 done
 
