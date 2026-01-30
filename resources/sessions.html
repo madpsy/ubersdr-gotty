@@ -165,10 +165,19 @@
 
         .session-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-top: 16px;
             padding-top: 16px;
             border-top: 1px solid #e2e8f0;
+            flex-wrap: nowrap;
+        }
+
+        .session-actions .btn {
+            padding: 8px 12px;
+            font-size: 13px;
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
         }
 
         .empty-state {
