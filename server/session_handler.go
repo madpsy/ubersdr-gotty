@@ -41,7 +41,7 @@ func (server *Server) handleSessionList(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	log.Printf("Session list request from %s", r.RemoteAddr)
+	log.Printf("Session list request from %s", getClientIP(r))
 
 	// Execute tmux list-sessions command via SSH
 	cmd := exec.Command("ssh",
@@ -141,7 +141,7 @@ func (server *Server) handleSessionDestroy(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	log.Printf("Session destroy request from %s: %s", r.RemoteAddr, sessionName)
+	log.Printf("Session destroy request from %s: %s", getClientIP(r), sessionName)
 
 	// Execute tmux kill-session command via SSH
 	cmd := exec.Command("ssh",

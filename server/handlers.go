@@ -39,12 +39,13 @@ func (server *Server) generateHandleWS(ctx context.Context, cancel context.Cance
 
 		num := counter.add(1)
 		closeReason := "unknown reason"
+		clientIP := getClientIP(r)
 
 		defer func() {
 			num := counter.done()
 			log.Printf(
 				"Connection closed by %s: %s, connections: %d/%d",
-				closeReason, r.RemoteAddr, num, server.options.MaxConnection,
+				closeReason, clientIP, num, server.options.MaxConnection,
 			)
 
 			if server.options.Once {
@@ -59,7 +60,7 @@ func (server *Server) generateHandleWS(ctx context.Context, cancel context.Cance
 			}
 		}
 
-		log.Printf("New client connected: %s, connections: %d/%d", r.RemoteAddr, num, server.options.MaxConnection)
+		log.Printf("New client connected: %s, connections: %d/%d", clientIP, num, server.options.MaxConnection)
 
 		if r.Method != "GET" {
 			http.Error(w, "Method not allowed", 405)
@@ -73,7 +74,7 @@ func (server *Server) generateHandleWS(ctx context.Context, cancel context.Cance
 		}
 		defer conn.Close()
 
-		err = server.processWSConn(ctx, conn)
+		err = server.processWSConn(ctx, conn, clientIP)
 
 		switch err {
 		case ctx.Err():
@@ -88,7 +89,7 @@ func (server *Server) generateHandleWS(ctx context.Context, cancel context.Cance
 	}
 }
 
-func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn) error {
+func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, clientIP string) error {
 	typ, initLine, err := conn.ReadMessage()
 	if err != nil {
 		return errors.Wrapf(err, "failed to authenticate websocket connection")
@@ -122,10 +123,10 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn) e
 	}
 	params := query.Query()
 
-	// Track this connection
-	connID := fmt.Sprintf("%s-%d", conn.RemoteAddr().String(), time.Now().UnixNano())
+	// Track this connection using the real client IP
+	connID := fmt.Sprintf("%s-%d", clientIP, time.Now().UnixNano())
 	sessionName := params.Get("session")
-	server.connections.Add(connID, conn.RemoteAddr().String(), sessionName, init.Arguments)
+	server.connections.Add(connID, clientIP, sessionName, init.Arguments)
 	defer server.connections.Remove(connID)
 
 	var slave Slave
