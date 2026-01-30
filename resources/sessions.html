@@ -664,8 +664,17 @@
             window.location.href = `/?session=${encodeURIComponent(name)}`;
         }
 
-        function popoutSession(name) {
-            const url = `/?session=${encodeURIComponent(name)}`;
+        function popoutSession(sessionId) {
+            // Find the session to get its friendly name
+            const session = sessions.find(s => s.name === sessionId);
+            const friendlyName = session ? (session.window_name || session.name) : sessionId;
+            
+            // Build URL with session ID and friendly name if available
+            let url = `/?session=${encodeURIComponent(sessionId)}`;
+            if (session && session.window_name) {
+                url += `&name=${encodeURIComponent(session.window_name)}`;
+            }
+            
             const width = 1000;
             const height = 700;
             const left = (screen.width - width) / 2;
@@ -673,7 +682,7 @@
             
             window.open(
                 url,
-                'terminal_' + name,
+                'terminal_' + sessionId,
                 `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`
             );
         }

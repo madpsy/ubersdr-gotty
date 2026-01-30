@@ -6,16 +6,13 @@
     <link rel="stylesheet" href="./css/index.css" />
     <link rel="stylesheet" href="./css/xterm.css" />
     <link rel="stylesheet" href="./css/xterm_customize.css" />
-  </head>
-  <body>
-    <div id="terminal"></div>
     <script>
-      // Set document title based on URL parameters
+      // Set document title based on URL parameters - run immediately
       (function() {
         const params = new URLSearchParams(window.location.search);
         const sessionName = params.get('name');
         const sessionId = params.get('session');
-        
+
         if (sessionName) {
           // If friendly name is provided, use it
           document.title = sessionName;
@@ -26,6 +23,9 @@
         // Otherwise keep the default title from server
       })();
     </script>
+  </head>
+  <body>
+    <div id="terminal"></div>
     <script src="./auth_token.js"></script>
     <script src="./config.js"></script>
     <script src="./js/gotty-bundle.js"></script>
