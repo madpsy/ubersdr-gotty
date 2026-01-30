@@ -361,7 +361,7 @@
                 <span id="refresh-text">🔄 Refresh</span>
             </button>
             <button class="btn btn-success" onclick="showNewSessionModal()">➕ New Session</button>
-            <a href="/" class="btn" style="background: #718096; color: white;">🖥️ Direct Terminal</a>
+            <button class="btn" style="background: #718096; color: white;" onclick="openPopout('/', 'Direct Terminal')">🖥️ Direct Terminal</button>
             <button class="btn" style="background: #805ad5; color: white;" onclick="showDirectCommandModal()">⚡ Direct Command</button>
             <span style="margin-left: auto; color: #666; font-size: 14px;">
                 <span id="session-count">0</span> active sessions
@@ -571,7 +571,8 @@
                 url += `&arg=${encodeURIComponent(command)}`;
             }
             
-            window.location.href = url;
+            openPopout(url, friendlyName || currentSessionId);
+            closeNewSessionModal();
         }
 
         function showDirectCommandModal() {
@@ -593,7 +594,22 @@
             }
             
             // Use arg parameter to pass command to GoTTY
-            window.location.href = `/?arg=${encodeURIComponent(command)}`;
+            const url = `/?arg=${encodeURIComponent(command)}`;
+            openPopout(url, command);
+            closeDirectCommandModal();
+        }
+
+        function openPopout(url, title) {
+            const width = 1000;
+            const height = 700;
+            const left = (screen.width - width) / 2;
+            const top = (screen.height - height) / 2;
+            
+            window.open(
+                url,
+                'terminal_' + Date.now(),
+                `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`
+            );
         }
 
         // Allow Enter key to create session
