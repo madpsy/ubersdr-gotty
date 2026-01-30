@@ -44,8 +44,20 @@ WORKDIR /app
 
 COPY --from=go-builder /app/gotty /usr/local/bin/gotty
 
+# Create entrypoint script to handle SSH key permissions
+RUN echo '#!/bin/bash' > /entrypoint.sh && \
+    echo 'if [ -d /ssh-keys ]; then' >> /entrypoint.sh && \
+    echo '  mkdir -p /root/.ssh' >> /entrypoint.sh && \
+    echo '  cp -r /ssh-keys/* /root/.ssh/ 2>/dev/null || true' >> /entrypoint.sh && \
+    echo '  chmod 700 /root/.ssh' >> /entrypoint.sh && \
+    echo '  chmod 600 /root/.ssh/* 2>/dev/null || true' >> /entrypoint.sh && \
+    echo '  chmod 644 /root/.ssh/*.pub 2>/dev/null || true' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo 'exec gotty "$@"' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
 # Expose default gotty port
 EXPOSE 8080
 
-ENTRYPOINT ["gotty"]
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["--permit-write", "--reconnect", "bash", "-c", "ssh host.docker.internal"]
