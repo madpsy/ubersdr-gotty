@@ -122,25 +122,19 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn) e
 	}
 	defer slave.Close()
 
-	titleVars := server.titleVariables(
-		[]string{"server", "master", "slave"},
-		map[string]map[string]interface{}{
-			"server": server.options.TitleVariables,
-			"master": map[string]interface{}{
-				"remote_addr": conn.RemoteAddr(),
-			},
-			"slave": slave.WindowTitleVariables(),
-		},
-	)
-
-	titleBuf := new(bytes.Buffer)
-	err = server.titleTemplate.Execute(titleBuf, titleVars)
-	if err != nil {
-		return errors.Wrapf(err, "failed to fill window title template")
+	// Check if 'name' parameter is present - use it as title if so
+	var windowTitle []byte
+	customName := params.Get("name")
+	if customName != "" {
+		// Use the custom name from URL parameter
+		windowTitle = []byte(customName)
+	} else {
+		// Don't set a title - let the terminal escape sequences handle it
+		windowTitle = []byte("")
 	}
 
 	opts := []webtty.Option{
-		webtty.WithWindowTitle(titleBuf.Bytes()),
+		webtty.WithWindowTitle(windowTitle),
 	}
 	if server.options.PermitWrite {
 		opts = append(opts, webtty.WithPermitWrite())
