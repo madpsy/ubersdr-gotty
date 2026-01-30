@@ -361,7 +361,7 @@
                 <span id="refresh-text">🔄 Refresh</span>
             </button>
             <button class="btn btn-success" onclick="showNewSessionModal()">➕ New Session</button>
-            <button class="btn" style="background: #718096; color: white;" onclick="openPopout('/', 'Direct Terminal')">🖥️ Direct Terminal</button>
+            <button class="btn" style="background: #718096; color: white;" onclick="openPopout(basePath + '/', 'Direct Terminal')">🖥️ Direct Terminal</button>
             <button class="btn" style="background: #805ad5; color: white;" onclick="showDirectCommandModal()">⚡ Direct Command</button>
             <span style="margin-left: auto; color: #666; font-size: 14px;">
                 <span id="session-count">0</span> active sessions
@@ -463,12 +463,15 @@
     </div>
 
     <script>
+        // Detect base path from current URL for proxy support
+        const basePath = window.location.pathname.replace(/\/sessions$/, '');
+
         let sessions = [];
         let currentSessionId = '';
 
         async function fetchSessions() {
             try {
-                const response = await fetch('/api/sessions');
+                const response = await fetch(`${basePath}/api/sessions`);
                 if (!response.ok) throw new Error('Failed to fetch sessions');
                 const data = await response.json();
                 sessions = data.sessions || [];
@@ -607,14 +610,14 @@
                 return; // Don't create if validation fails
             }
             
-            let url = `/?session=${encodeURIComponent(currentSessionId)}`;
+            let url = `${basePath}/?session=${encodeURIComponent(currentSessionId)}`;
             if (friendlyName) {
                 url += `&name=${encodeURIComponent(friendlyName)}`;
             }
             if (command) {
                 url += `&arg=${encodeURIComponent(command)}`;
             }
-            
+
             openPopout(url, friendlyName || currentSessionId);
             closeNewSessionModal();
             
@@ -641,7 +644,7 @@
             }
             
             // Use arg parameter to pass command to GoTTY
-            const url = `/?arg=${encodeURIComponent(command)}`;
+            const url = `${basePath}/?arg=${encodeURIComponent(command)}`;
             openPopout(url, command);
             closeDirectCommandModal();
         }
@@ -705,7 +708,7 @@
             const friendlyName = session ? (session.window_name || session.name) : sessionId;
             
             // Build URL with session ID and friendly name if available
-            let url = `/?session=${encodeURIComponent(sessionId)}`;
+            let url = `${basePath}/?session=${encodeURIComponent(sessionId)}`;
             if (session && session.window_name) {
                 url += `&name=${encodeURIComponent(session.window_name)}`;
             }
@@ -733,11 +736,11 @@
             
             if (existingSession) {
                 // Session exists, attach to it
-                openPopout(`/?session=${encodeURIComponent(existingSession.name)}`, sessionName);
+                openPopout(`${basePath}/?session=${encodeURIComponent(existingSession.name)}`, sessionName);
             } else {
                 // Session doesn't exist, create new one with predefined name
                 const sessionId = 'quick-' + sessionName + '-' + Date.now();
-                const url = `/?session=${encodeURIComponent(sessionId)}&name=${encodeURIComponent(sessionName)}&arg=${encodeURIComponent(command)}`;
+                const url = `${basePath}/?session=${encodeURIComponent(sessionId)}&name=${encodeURIComponent(sessionName)}&arg=${encodeURIComponent(command)}`;
                 openPopout(url, sessionName);
                 
                 // Refresh after creating new quick launch session
@@ -751,7 +754,7 @@
             }
 
             try {
-                const response = await fetch(`/api/sessions/destroy?name=${encodeURIComponent(name)}`, {
+                const response = await fetch(`${basePath}/api/sessions/destroy?name=${encodeURIComponent(name)}`, {
                     method: 'POST'
                 });
                 
@@ -820,7 +823,7 @@
             const startTime = Date.now();
             
             try {
-                const response = await fetch('/api/exec', {
+                const response = await fetch(`${basePath}/api/exec`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
