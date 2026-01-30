@@ -353,6 +353,7 @@
             </button>
             <button class="btn btn-success" onclick="showNewSessionModal()">➕ New Session</button>
             <a href="/" class="btn" style="background: #718096; color: white;">🖥️ Direct Terminal</a>
+            <button class="btn" style="background: #805ad5; color: white;" onclick="showDirectCommandModal()">⚡ Direct Command</button>
             <span style="margin-left: auto; color: #666; font-size: 14px;">
                 <span id="session-count">0</span> active sessions
             </span>
@@ -394,7 +395,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Create New Session</h2>
-                <p>Enter a friendly name for your session</p>
+                <p>Enter a friendly name and optional command for your session</p>
             </div>
             <div class="modal-body">
                 <div class="form-group">
@@ -402,10 +403,36 @@
                     <input type="text" id="sessionName" placeholder="e.g., My Dev Session" autofocus>
                     <div class="hint" id="sessionIdHint"></div>
                 </div>
+                <div class="form-group">
+                    <label for="sessionCommand">Command (optional)</label>
+                    <input type="text" id="sessionCommand" placeholder="e.g., htop, python3, vim myfile.txt">
+                    <div class="hint">Leave empty for default shell (bash)</div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeNewSessionModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="createSession()">Create Session</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Direct Command Modal -->
+    <div id="directCommandModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚡ Direct Terminal Command</h2>
+                <p>Open a terminal with a specific command</p>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="directCommand">Command</label>
+                    <input type="text" id="directCommand" placeholder="e.g., htop, python3, vim myfile.txt" autofocus>
+                    <div class="hint">The terminal will open with this command running</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDirectCommandModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="openDirectCommand()">Open Terminal</button>
             </div>
         </div>
     </div>
@@ -511,6 +538,7 @@
             currentSessionId = 'session-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
             document.getElementById('sessionIdHint').textContent = 'Session ID: ' + currentSessionId;
             document.getElementById('sessionName').value = '';
+            document.getElementById('sessionCommand').value = '';
             document.getElementById('newSessionModal').classList.add('show');
             document.getElementById('sessionName').focus();
         }
@@ -521,13 +549,39 @@
 
         function createSession() {
             const friendlyName = document.getElementById('sessionName').value.trim();
+            const command = document.getElementById('sessionCommand').value.trim();
             
             let url = `/?session=${encodeURIComponent(currentSessionId)}`;
             if (friendlyName) {
                 url += `&name=${encodeURIComponent(friendlyName)}`;
             }
+            if (command) {
+                url += `&arg=${encodeURIComponent(command)}`;
+            }
             
             window.location.href = url;
+        }
+
+        function showDirectCommandModal() {
+            document.getElementById('directCommand').value = '';
+            document.getElementById('directCommandModal').classList.add('show');
+            document.getElementById('directCommand').focus();
+        }
+
+        function closeDirectCommandModal() {
+            document.getElementById('directCommandModal').classList.remove('show');
+        }
+
+        function openDirectCommand() {
+            const command = document.getElementById('directCommand').value.trim();
+            
+            if (!command) {
+                alert('Please enter a command');
+                return;
+            }
+            
+            // Use arg parameter to pass command to GoTTY
+            window.location.href = `/?arg=${encodeURIComponent(command)}`;
         }
 
         // Allow Enter key to create session
@@ -537,12 +591,19 @@
                     createSession();
                 }
             });
+            
+            document.getElementById('directCommand').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    openDirectCommand();
+                }
+            });
         });
 
         // Close modal on Escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeNewSessionModal();
+                closeDirectCommandModal();
             }
         });
 
@@ -550,6 +611,12 @@
         document.getElementById('newSessionModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeNewSessionModal();
+            }
+        });
+
+        document.getElementById('directCommandModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDirectCommandModal();
             }
         });
 
