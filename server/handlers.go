@@ -92,15 +92,20 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn) e
 	if err != nil {
 		return errors.Wrapf(err, "failed to authenticate websocket connection")
 	}
+	log.Printf("DEBUG: Received WebSocket message type: %d, length: %d bytes", typ, len(initLine))
 	if typ != websocket.TextMessage {
 		return errors.New("failed to authenticate websocket connection: invalid message type")
 	}
 
+	log.Printf("DEBUG: Raw init message: %q", string(initLine))
 	var init InitMessage
 	err = json.Unmarshal(initLine, &init)
 	if err != nil {
+		log.Printf("DEBUG: JSON unmarshal error: %v", err)
+		log.Printf("DEBUG: Failed to parse init message, raw bytes (hex): %x", initLine)
 		return errors.Wrapf(err, "failed to authenticate websocket connection")
 	}
+	log.Printf("DEBUG: Successfully parsed init message - AuthToken present: %v, Arguments: %q", init.AuthToken != "", init.Arguments)
 	if init.AuthToken != server.options.Credential {
 		return errors.New("failed to authenticate websocket connection")
 	}
