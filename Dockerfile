@@ -54,22 +54,19 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo '  chmod 644 /root/.ssh/*.pub 2>/dev/null || true' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
-    echo '# Detect username from SSH keys ownership or use SSH_USER env var' >> /entrypoint.sh && \
-    echo 'if [ -z "$SSH_USER" ] && [ -d /ssh-keys ]; then' >> /entrypoint.sh && \
-    echo '  SSH_USER=$(stat -c "%U" /ssh-keys 2>/dev/null || echo "root")' >> /entrypoint.sh && \
-    echo 'fi' >> /entrypoint.sh && \
-    echo 'SSH_USER=${SSH_USER:-root}' >> /entrypoint.sh && \
+    echo '# Use SSH_USER env var, fallback to USER env var, or default to current user' >> /entrypoint.sh && \
+    echo 'SSH_USER=${SSH_USER:-${USER:-$(whoami)}}' >> /entrypoint.sh && \
     echo '' >> /entrypoint.sh && \
     echo '# If no custom command provided, use default SSH command with detected user' >> /entrypoint.sh && \
     echo 'if [ "$#" -eq 0 ] || [ "$1" = "--permit-write" ]; then' >> /entrypoint.sh && \
-    echo '  exec gotty --permit-write --reconnect bash -c "ssh ${SSH_USER}@host.docker.internal"' >> /entrypoint.sh && \
+    echo '  exec gotty --permit-write --reconnect bash -c "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t ${SSH_USER}@host.docker.internal \"export TERM=xterm-256color; exec bash -l\""' >> /entrypoint.sh && \
     echo 'else' >> /entrypoint.sh && \
     echo '  exec gotty "$@"' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
 # Expose default gotty port
-EXPOSE 8080
+EXPOSE 9980
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD []
