@@ -68,7 +68,17 @@ export class Xterm {
     }
 
     setWindowTitle(title: string) {
-        document.title = title;
+        // Check if we have a 'name' parameter in the URL - if so, use that instead
+        const params = new URLSearchParams(window.location.search);
+        const customName = params.get('name');
+
+        if (customName) {
+            // User specified a custom name, keep using it
+            document.title = customName;
+        } else {
+            // No custom name, use the title from the terminal
+            document.title = title;
+        }
     };
 
     setPreferences(value: object) {
