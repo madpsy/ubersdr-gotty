@@ -223,16 +223,20 @@ func (server *Server) setupHandlers(ctx context.Context, cancel context.CancelFu
 	sessionListHandler := http.Handler(http.HandlerFunc(server.handleSessionList))
 	sessionDestroyHandler := http.Handler(http.HandlerFunc(server.handleSessionDestroy))
 	connectionsListHandler := http.Handler(http.HandlerFunc(server.handleConnectionsList))
+	connectionsHistoryHandler := http.Handler(http.HandlerFunc(server.handleConnectionsHistory))
 	if server.options.EnableBasicAuth {
 		sessionListHandler = server.wrapBasicAuth(sessionListHandler, server.options.Credential)
 		sessionDestroyHandler = server.wrapBasicAuth(sessionDestroyHandler, server.options.Credential)
 		connectionsListHandler = server.wrapBasicAuth(connectionsListHandler, server.options.Credential)
+		connectionsHistoryHandler = server.wrapBasicAuth(connectionsHistoryHandler, server.options.Credential)
 	}
 	wsMux.Handle(pathPrefix+"api/sessions", server.wrapLogger(sessionListHandler))
 	wsMux.Handle(pathPrefix+"api/sessions/destroy", server.wrapLogger(sessionDestroyHandler))
 	wsMux.Handle(pathPrefix+"api/connections", server.wrapLogger(connectionsListHandler))
+	wsMux.Handle(pathPrefix+"api/connections/history", server.wrapLogger(connectionsHistoryHandler))
 	log.Printf("Session API enabled at: %sapi/sessions", pathPrefix)
 	log.Printf("Connections API enabled at: %sapi/connections", pathPrefix)
+	log.Printf("Connection History API enabled at: %sapi/connections/history", pathPrefix)
 
 	siteHandler = http.Handler(wsMux)
 

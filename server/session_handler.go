@@ -252,6 +252,30 @@ func (server *Server) handleConnectionsList(w http.ResponseWriter, r *http.Reque
 	json.NewEncoder(w).Encode(response)
 }
 
+// ConnectionHistoryResponse represents the response for connection history
+type ConnectionHistoryResponse struct {
+	History []*ConnectionHistoryEntry `json:"history"`
+	Count   int                       `json:"count"`
+}
+
+// handleConnectionsHistory handles GET requests to retrieve connection history
+func (server *Server) handleConnectionsHistory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	history := server.connections.GetHistory()
+
+	response := ConnectionHistoryResponse{
+		History: history,
+		Count:   len(history),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 // Helper function to parse window names from tmux output
 // Returns a map of session_name -> first_window_name
 func parseWindowNames(output string) map[string]string {
