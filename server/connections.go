@@ -110,15 +110,31 @@ func (ct *ConnectionTracker) Count() int {
 	return len(ct.connections)
 }
 
-// GetHistory returns the connection history
+// GetHistory returns the connection history including active connections
 func (ct *ConnectionTracker) GetHistory() []*ConnectionHistoryEntry {
 	ct.mu.RLock()
 	defer ct.mu.RUnlock()
 
-	// Return a copy of the history slice
-	historyCopy := make([]*ConnectionHistoryEntry, len(ct.history))
-	copy(historyCopy, ct.history)
-	return historyCopy
+	// Create a combined list starting with active connections
+	combined := make([]*ConnectionHistoryEntry, 0, len(ct.connections)+len(ct.history))
+
+	// Add active connections first (they're the most recent)
+	for _, conn := range ct.connections {
+		entry := &ConnectionHistoryEntry{
+			RemoteAddr:     conn.RemoteAddr,
+			ConnectedAt:    conn.ConnectedAt,
+			DisconnectedAt: time.Time{}, // Zero time indicates still connected
+			Duration:       formatDuration(time.Since(conn.ConnectedAt)),
+			SessionName:    conn.SessionName,
+			Arguments:      conn.Arguments,
+		}
+		combined = append(combined, entry)
+	}
+
+	// Add historical connections
+	combined = append(combined, ct.history...)
+
+	return combined
 }
 
 // formatDuration formats a duration into a human-readable string

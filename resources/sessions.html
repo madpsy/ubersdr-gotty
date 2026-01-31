@@ -1059,15 +1059,25 @@
                 <tbody>
                     ${pageHistory.map(entry => {
                         const connectedAt = new Date(entry.connected_at);
-                        const disconnectedAt = new Date(entry.disconnected_at);
                         const sessionDisplay = entry.session_name || '<span style="color: #999;">Direct terminal</span>';
+                        
+                        // Check if still connected (disconnected_at is zero time or invalid)
+                        const isActive = !entry.disconnected_at || entry.disconnected_at === '0001-01-01T00:00:00Z' || new Date(entry.disconnected_at).getTime() === 0;
+                        
+                        let disconnectedDisplay;
+                        if (isActive) {
+                            disconnectedDisplay = '<span style="color: #48bb78; font-weight: 600;">● Connected</span>';
+                        } else {
+                            const disconnectedAt = new Date(entry.disconnected_at);
+                            disconnectedDisplay = disconnectedAt.toLocaleString();
+                        }
 
                         return `
-                            <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <tr style="border-bottom: 1px solid #f0f0f0; ${isActive ? 'background: #f0fff4;' : ''}">
                                 <td style="padding: 12px; font-family: monospace; font-size: 13px;">${escapeHtml(entry.remote_addr)}</td>
                                 <td style="padding: 12px; font-size: 13px;">${sessionDisplay}</td>
                                 <td style="padding: 12px; font-size: 13px; color: #666;">${connectedAt.toLocaleString()}</td>
-                                <td style="padding: 12px; font-size: 13px; color: #666;">${disconnectedAt.toLocaleString()}</td>
+                                <td style="padding: 12px; font-size: 13px; color: #666;">${disconnectedDisplay}</td>
                                 <td style="padding: 12px; font-size: 13px; color: #666;">${escapeHtml(entry.duration)}</td>
                             </tr>
                         `;
