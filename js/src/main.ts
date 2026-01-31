@@ -23,6 +23,23 @@ if (elem !== null) {
     const wt = new WebTTY(term, factory, args, gotty_auth_token);
     const closer = wt.open();
 
+    // Show help bubble if session parameter is present
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('session')) {
+        const helpBubble = document.getElementById('help-bubble');
+        if (helpBubble) {
+            helpBubble.style.display = 'block';
+
+            // Hide after 3 seconds with fade out animation
+            setTimeout(() => {
+                helpBubble.classList.add('fade-out');
+                setTimeout(() => {
+                    helpBubble.style.display = 'none';
+                }, 500); // Wait for fade out animation to complete
+            }, 3000);
+        }
+    }
+
     window.addEventListener("unload", () => {
         closer();
         term.close();
