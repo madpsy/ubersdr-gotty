@@ -74,7 +74,7 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo '# If no custom command provided, use wrapper (handles both normal and session modes)' >> /entrypoint.sh && \
     echo 'if [ "$#" -eq 0 ] || [ "$1" = "--permit-write" ]; then' >> /entrypoint.sh && \
     echo '  # Wrapper decides: no session param = direct SSH, session param = tmux' >> /entrypoint.sh && \
-    echo '  exec gotty --permit-write --permit-arguments --reconnect /usr/local/bin/tmux-wrapper.sh' >> /entrypoint.sh && \
+    echo '  exec gotty --permit-write --permit-arguments /usr/local/bin/tmux-wrapper.sh' >> /entrypoint.sh && \
     echo 'else' >> /entrypoint.sh && \
     echo '  exec gotty "$@"' >> /entrypoint.sh && \
     echo 'fi' >> /entrypoint.sh && \

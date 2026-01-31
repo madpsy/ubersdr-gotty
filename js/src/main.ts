@@ -30,13 +30,13 @@ if (elem !== null) {
         if (helpBubble) {
             helpBubble.style.display = 'block';
 
-            // Hide after 3 seconds with fade out animation
+            // Hide after 5 seconds with fade out animation
             setTimeout(() => {
                 helpBubble.classList.add('fade-out');
                 setTimeout(() => {
                     helpBubble.style.display = 'none';
                 }, 500); // Wait for fade out animation to complete
-            }, 3000);
+            }, 5000);
         }
     }
 
