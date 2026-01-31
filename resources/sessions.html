@@ -958,6 +958,7 @@
                         <th style="padding: 12px; text-align: left; color: #666; font-weight: 600; font-size: 13px;">SESSION</th>
                         <th style="padding: 12px; text-align: left; color: #666; font-weight: 600; font-size: 13px;">CONNECTED</th>
                         <th style="padding: 12px; text-align: left; color: #666; font-weight: 600; font-size: 13px;">DURATION</th>
+                        <th style="padding: 12px; text-align: left; color: #666; font-weight: 600; font-size: 13px;">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -972,6 +973,11 @@
                                 <td style="padding: 12px; font-size: 13px;">${sessionDisplay}</td>
                                 <td style="padding: 12px; font-size: 13px; color: #666;">${connectedAt.toLocaleString()}</td>
                                 <td style="padding: 12px; font-size: 13px; color: #666;">${duration}</td>
+                                <td style="padding: 12px;">
+                                    <button class="btn btn-danger" onclick="kickConnection('${escapeHtml(conn.id)}')" style="padding: 6px 12px; font-size: 12px;">
+                                        🚫 Kick
+                                    </button>
+                                </td>
                             </tr>
                         `;
                     }).join('')}
@@ -993,6 +999,31 @@
                 return `${minutes}m ${seconds % 60}s`;
             } else {
                 return `${seconds}s`;
+            }
+        }
+
+        // Kick a connection
+        async function kickConnection(connId) {
+            if (!confirm('Are you sure you want to disconnect this user?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${basePath}/api/connections/kick?id=${encodeURIComponent(connId)}`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) throw new Error('Failed to kick connection');
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Refresh connections list immediately
+                    await fetchConnections();
+                } else {
+                    showError(data.message || 'Failed to kick connection');
+                }
+            } catch (error) {
+                showError('Error kicking connection: ' + error.message);
             }
         }
 

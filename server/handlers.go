@@ -127,6 +127,7 @@ func (server *Server) processWSConn(ctx context.Context, conn *websocket.Conn, c
 	connID := fmt.Sprintf("%s-%d", clientIP, time.Now().UnixNano())
 	sessionName := params.Get("session")
 	server.connections.Add(connID, clientIP, sessionName, init.Arguments)
+	server.connections.SetConn(connID, conn) // Store the WebSocket connection for kick functionality
 	defer server.connections.Remove(connID)
 
 	var slave Slave

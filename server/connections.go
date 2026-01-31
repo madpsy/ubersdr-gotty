@@ -3,15 +3,18 @@ package server
 import (
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 // ConnectionInfo represents information about a connected client
 type ConnectionInfo struct {
-	ID          string    `json:"id"`
-	RemoteAddr  string    `json:"remote_addr"`
-	ConnectedAt time.Time `json:"connected_at"`
-	SessionName string    `json:"session_name,omitempty"`
-	Arguments   string    `json:"arguments,omitempty"`
+	ID          string          `json:"id"`
+	RemoteAddr  string          `json:"remote_addr"`
+	ConnectedAt time.Time       `json:"connected_at"`
+	SessionName string          `json:"session_name,omitempty"`
+	Arguments   string          `json:"arguments,omitempty"`
+	conn        *websocket.Conn // unexported field to store the actual connection
 }
 
 // ConnectionHistoryEntry represents a historical connection record
@@ -52,7 +55,36 @@ func (ct *ConnectionTracker) Add(id, remoteAddr, sessionName, arguments string) 
 		ConnectedAt: time.Now(),
 		SessionName: sessionName,
 		Arguments:   arguments,
+		conn:        nil, // Will be set via SetConn
 	}
+}
+
+// SetConn sets the WebSocket connection for a tracked connection
+func (ct *ConnectionTracker) SetConn(id string, conn *websocket.Conn) {
+	ct.mu.Lock()
+	defer ct.mu.Unlock()
+
+	if connInfo, exists := ct.connections[id]; exists {
+		connInfo.conn = conn
+	}
+}
+
+// Kick closes a connection by ID
+func (ct *ConnectionTracker) Kick(id string) error {
+	ct.mu.Lock()
+	defer ct.mu.Unlock()
+
+	connInfo, exists := ct.connections[id]
+	if !exists {
+		return nil // Connection not found, already disconnected
+	}
+
+	if connInfo.conn != nil {
+		// Close the WebSocket connection
+		connInfo.conn.Close()
+	}
+
+	return nil
 }
 
 // Remove removes a connection from the tracker and adds it to history

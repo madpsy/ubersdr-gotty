@@ -276,6 +276,47 @@ func (server *Server) handleConnectionsHistory(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(response)
 }
 
+// handleConnectionKick handles POST requests to kick (disconnect) a user
+func (server *Server) handleConnectionKick(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get connection ID from query parameter
+	connID := r.URL.Query().Get("id")
+	if connID == "" {
+		http.Error(w, "Connection ID is required", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Connection kick request from %s: %s", getClientIP(r), connID)
+
+	// Kick the connection
+	err := server.connections.Kick(connID)
+	if err != nil {
+		response := SessionActionResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to kick connection: %v", err),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		log.Printf("Connection kick failed: %v", err)
+		return
+	}
+
+	response := SessionActionResponse{
+		Success: true,
+		Message: fmt.Sprintf("Connection '%s' kicked successfully", connID),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+
+	log.Printf("Connection kicked successfully: %s", connID)
+}
+
 // Helper function to parse window names from tmux output
 // Returns a map of session_name -> first_window_name
 func parseWindowNames(output string) map[string]string {
